@@ -7,7 +7,7 @@ import {
 import { Reflector } from '@nestjs/core';
 import { JwtService } from '@nestjs/jwt';
 import { Request } from 'express';
-import { IS_PUBLIC_KEY } from '../decorators/ispublic.decorator';
+import { IS_PUBLIC_KEY } from 'src/decoratos/ispublic.recorator.utenti';
 
 @Injectable()
 export class AuthGuard implements CanActivate {
@@ -25,16 +25,22 @@ export class AuthGuard implements CanActivate {
       return true;
     }
     const request = context.switchToHttp().getRequest();
-    const token = this.extractTokenFromHeader(request);
+    const token = request.headers.authorization?.split(' ')[1];
+    const decoded = this.jwtService.verify(token, {
+      secret: process.env.JWT_SECRET,
+    });
+
     if (!token) {
+      throw new UnauthorizedException();
+    }
+    if (decoded.sub !== request.params.codiceCliente) {
       throw new UnauthorizedException();
     }
     try {
       const payload = await this.jwtService.verifyAsync(token, {
         secret: process.env.JWT_SECRET,
       });
-      // salva il payload in un oggettorequest per accedervi
-      //successivamente (controller o altri route handlers stessa request)
+
       request['profiloUtente'] = payload;
     } catch {
       throw new UnauthorizedException();

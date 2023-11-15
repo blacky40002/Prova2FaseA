@@ -7,8 +7,8 @@ import {
   PrimaryColumn,
 } from 'typeorm';
 
-@Entity('utenti')
-export class utentiEntity {
+@Entity('clienti')
+export class clientiEntity {
   @PrimaryColumn()
   @Length(5, 5)
   @Matches(/^[A-Z]+$/, {
