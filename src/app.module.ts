@@ -4,6 +4,7 @@ import { AppService } from './app.service';
 import { clientiModule } from './clienti/clienti.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ProdottiModule } from './prodotti/prodotti.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
       migrationsTableName: 'migration',
       migrations: ['src/migration/*.ts'],
     }),
+    ProdottiModule,
   ],
   controllers: [AppController],
   providers: [AppService],
