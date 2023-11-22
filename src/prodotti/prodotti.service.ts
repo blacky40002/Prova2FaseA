@@ -1,16 +1,24 @@
 import {
   BadRequestException,
+  Inject,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-
+import { Model } from 'mongoose';
+import { InjectModel } from '@nestjs/mongoose';
 import { InjectRepository } from '@nestjs/typeorm';
 import { prodottiEntity } from './entities/prodotti.entity';
 import { Repository } from 'typeorm';
+import { ClientProxy } from '@nestjs/microservices';
 
 @Injectable()
 export class ProdottiService {
   constructor(
+    @InjectModel('Prodotto') private prodottoModel: Model<IProdotto>,
+    @Inject('prodotto-aggiornato-client')
+    private readonly comunicationClientAggiornato: ClientProxy,
+    @Inject('prodotto-insufficente-client')
+    private readonly comunicationClientInsufficente: ClientProxy,
     @InjectRepository(prodottiEntity)
     private prodottiRepository: Repository<prodottiEntity>,
   ) {}
@@ -24,51 +32,47 @@ export class ProdottiService {
       const newProdotto = this.prodottiRepository.create(prodottoData);
       return await this.prodottiRepository.save(newProdotto);
     } else {
-      throw new BadRequestException('data non valido.');
+      throw new BadRequestException('Data non valido.');
     }
   }
 
   async ordinareProdotti(
     idProdotto: number,
-    quantita: number,
+    quantità: number,
   ): Promise<prodottiEntity> {
-    const prodotto = await this.prodottiRepository.findOne({
-      where: { idProdotto },
-      select: ['idProdotto', 'quantitaMinimaOrdine'],
-    });
+    const prodotto = await this.prodottiRepository.findOneBy({ idProdotto });
+
     if (!prodotto) {
-      throw new NotFoundException('Product not found');
+      throw new NotFoundException('Prodotto non trovato');
     }
 
-    if (quantita <= 0) {
-      throw new BadRequestException('quantita dve essere maggiore di zero');
-    }
-
-    prodotto.giacenza += quantita;
-
-    // Save the updated product
-    return await this.prodottiRepository.save(prodotto);
+    prodotto.giacenza += quantità;
+    this.comunicationClientAggiornato.emit('prodotto-aggiornato', {
+      id: idProdotto,
+      giacenza: prodotto.giacenza,
+    });
+    return this.prodottiRepository.save(prodotto);
   }
 
   async vendereProdotti(
     idProdotto: number,
-    quantita: number,
+    quantità: number,
   ): Promise<prodottiEntity> {
-    // Find the product by id
-    const prodotto = await this.prodottiRepository.findOne({
-      where: { idProdotto },
-      select: ['idProdotto', 'giacenza'],
-    });
+    const prodotto = await this.prodottiRepository.findOneBy({ idProdotto });
+
     if (!prodotto) {
-      throw new NotFoundException('prodotto non trovato');
+      throw new NotFoundException('Prodotto non trovato');
     }
 
-    if (quantita <= 0 || quantita > prodotto.giacenza) {
-      throw new BadRequestException('quantita non sufficente');
+    if (prodotto.giacenza < quantità) {
+      this.comunicationClientInsufficente.emit('prodotto-insufficente', {
+        id: idProdotto,
+        quantitàRichiesta: quantità,
+      });
+      throw new BadRequestException('Giacenza insufficiente');
     }
 
-    prodotto.giacenza -= quantita;
-
-    return await this.prodottiRepository.save(prodotto);
+    prodotto.giacenza -= quantità;
+    return this.prodottiRepository.save(prodotto);
   }
 }

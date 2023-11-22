@@ -5,6 +5,8 @@ import {
   Patch,
   Param,
   ParseIntPipe,
+  BadRequestException,
+  HttpException,
 } from '@nestjs/common';
 import { ProdottiService } from './prodotti.service';
 import { prodottiEntity } from './entities/prodotti.entity';
@@ -19,7 +21,14 @@ export class ProdottiController {
   async createProdotti(
     @Body() prodottoData: prodottiEntity,
   ): Promise<prodottiEntity> {
-    return this.prodottiService.createProdotti(prodottoData);
+    if (!prodottoData) {
+      throw new BadRequestException('Dati del prodotto mancanti');
+    }
+    try {
+      return this.prodottiService.createProdotti(prodottoData);
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
   }
 
   @Public()
@@ -28,15 +37,33 @@ export class ProdottiController {
     @Param('idOrdine') idOrdine: number,
     @Body('quantita', ParseIntPipe) quantita: number,
   ): Promise<prodottiEntity> {
-    return this.prodottiService.ordinareProdotti(idOrdine, quantita);
+    if (!idOrdine || !quantita) {
+      throw new BadRequestException(
+        'ID ordine o quantità mancanti o non validi.',
+      );
+    }
+    try {
+      return this.prodottiService.ordinareProdotti(idOrdine, quantita);
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
   }
 
   @Public()
-  @Patch(':idVendita/:quantita')
+  @Patch('vendere/:idVendita/')
   async vendereProdotti(
     @Param('idVendita') idVendita: number,
     @Body('quantita', ParseIntPipe) quantita: number,
   ): Promise<prodottiEntity> {
-    return this.prodottiService.vendereProdotti(idVendita, quantita);
+    if (!idVendita || !quantita) {
+      throw new BadRequestException(
+        'ID vendita o quantità mancanti o non validi.',
+      );
+    }
+    try {
+      return this.prodottiService.vendereProdotti(idVendita, quantita);
+    } catch (error) {
+      throw new HttpException(error.message, error.status);
+    }
   }
 }

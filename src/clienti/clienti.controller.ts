@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   UsePipes,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { clientiService } from './clienti.service';
 import { CreateclientiDto } from './dto/create-clienti.dto';
@@ -24,19 +26,31 @@ export class clientiController {
   @Post('login')
   @Public()
   async login(@Body() cliente: LoginDto) {
-    return await this.clientiService.login(cliente);
+    try {
+      return await this.clientiService.login(cliente);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.UNAUTHORIZED);
+    }
   }
 
   @Get(':codiceCliente')
   @UseGuards(AuthGuard)
   @UsePipes(new validazionePipe())
   async getCliente(@Param('codiceCliente') codiceCliente: string) {
-    return await this.clientiService.getCliente(codiceCliente);
+    try {
+      return await this.clientiService.getCliente(codiceCliente);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.NOT_FOUND);
+    }
   }
 
   @Post('registra')
   @Public()
   async create(@Body() utente: CreateclientiDto) {
-    return await this.clientiService.registraCliente(utente);
+    try {
+      return await this.clientiService.registraCliente(utente);
+    } catch (error) {
+      throw new HttpException(error.message, HttpStatus.BAD_REQUEST);
+    }
   }
 }

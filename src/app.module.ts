@@ -5,6 +5,8 @@ import { clientiModule } from './clienti/clienti.module';
 import { ConfigModule } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { ProdottiModule } from './prodotti/prodotti.module';
+import { LoggingService } from './EXCEPTIONFILTERS/Logging';
+import { HttpExceptionFilter } from './EXCEPTIONFILTERS/Eccezzioni';
 
 @Module({
   imports: [
@@ -25,6 +27,6 @@ import { ProdottiModule } from './prodotti/prodotti.module';
     ProdottiModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, LoggingService, HttpExceptionFilter],
 })
 export class AppModule {}
